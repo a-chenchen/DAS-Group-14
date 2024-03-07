@@ -1,0 +1,115 @@
+---
+title: ""
+number-sections: true
+format: 
+  html:
+    embed-resources: true
+    code-tools: true
+  pdf: default
+editor_options: 
+  chunk_output_type: console
+execute:
+  echo: true
+  eval: true
+  warning: false
+  message: false
+---
+
+```{r}
+library(tidyverse)
+library(moderndive)
+library(gapminder)
+library(sjPlot)
+library(stats)
+library(jtools)
+library(dplyr)
+library(knitr)
+library(janitor)
+library(MASS)
+library(sjPlot)
+```
+
+Data wrangling and subseting
+
+```{r}
+#data wrangling and subseting
+data = read.csv('dataset14.csv')
+mapping = c('Poor' = 0, 'Good' = 1)
+data$Qualityclass = mapping[data$Qualityclass]
+data$country_of_origin = as.factor(data$country_of_origin)
+data$harvested = as.factor(data$harvested)
+data = data %>%
+  filter(country_of_origin == 'Brazil' | country_of_origin == 'Colombia')
+```
+
+```{r}
+table(data$country_of_origin)
+```
+
+## Not removing variables
+
+Here we use all variables to fit a full logistic regression model:
+
+```{r}
+full_model = glm(formula = data$Qualityclass ~ ., family = binomial(link = 'logit'),data = data)
+```
+
+```{r}
+full_model %>%
+  summary()
+```
+
+AIC:164.97
+
+```{r}
+table(data$harvested)
+```
+
+It is shown that the 'category_two_defects' variable and 'altitude_mean_meters' variable are insignificant, thus
+
+## Removing the 'category_two_defects' variable
+
+```{r}
+data1 <- data %>%
+  filter(country_of_origin == 'Brazil' | country_of_origin == 'Colombia') %>%
+  dplyr::select(-category_two_defects)
+
+```
+
+Here we use subseted variables to fit a new logistic regression model:
+
+```{r}
+model1 = glm(formula = data1$Qualityclass ~ ., family = binomial(link = 'logit'),data = data1)
+```
+
+```{r}
+model1 %>%
+  summary()
+```
+
+AIC: 163.73
+
+## Removing the 'category_two_defects' variable and the 'altitude_mean_meters' variable
+
+```{r}
+data2 <- data %>%
+  filter(country_of_origin == 'Brazil' | country_of_origin == 'Colombia') %>%
+  dplyr::select(-c(category_two_defects, altitude_mean_meters))
+```
+
+Here we use subseted variables to fit a new logistic regression model:
+
+```{r}
+model2 = glm(formula = data2$Qualityclass ~ ., family = binomial(link = 'logit'),data = data2)
+```
+
+```{r}
+model2 %>%
+  summary()
+```
+
+AIC: 205.15
+
+However, after removing the 'category_two_defects' variable, model2 has a higher AIC.
+
+Thus, we adopt the model which only remove the 'category_two_defects' variable (model1).
