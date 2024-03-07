@@ -40,6 +40,7 @@ data$country_of_origin = as.factor(data$country_of_origin)
 data$harvested = as.factor(data$harvested)
 data = data %>%
   filter(country_of_origin == 'Brazil' | country_of_origin == 'Colombia')
+data <- na.omit(data)
 ```
 
 ```{r}
@@ -59,7 +60,7 @@ full_model %>%
   summary()
 ```
 
-AIC:164.97
+AIC=164.97
 
 ```{r}
 table(data$harvested)
@@ -67,12 +68,28 @@ table(data$harvested)
 
 It is shown that the 'category_two_defects' variable and 'altitude_mean_meters' variable are insignificant, thus
 
-## Removing the 'category_two_defects' variable
+## Using stepAIC() to obtain a general comprehension
+```{r}
+stepAIC(full_model)
+```
+stepAIC() shows the final model is without 'harvested' and 'altitude_mean_meters': 
+Step:  AIC=157.45
+data$Qualityclass ~ country_of_origin + aroma + flavor + acidity + 
+    category_two_defects
+    
+stepAIC() shows the second final model is without 'harvested': 
+Step:  AIC=159.02
+data$Qualityclass ~ country_of_origin + aroma + flavor + acidity + 
+    category_two_defects + altitude_mean_meters
+    
+which indicates that to obtain a better glm model, 'harvested' variable should be removed. 
+Following are discussions on the 'category_two_defects' variable and 'altitude_mean_meters' variable
+## Removing the 'harvested' and 'category_two_defects' variable
 
 ```{r}
 data1 <- data %>%
   filter(country_of_origin == 'Brazil' | country_of_origin == 'Colombia') %>%
-  dplyr::select(-category_two_defects)
+  dplyr::select(-c(category_two_defects, harvested))
 
 ```
 
@@ -87,29 +104,53 @@ model1 %>%
   summary()
 ```
 
-AIC: 163.73
+AIC=158.53
 
-## Removing the 'category_two_defects' variable and the 'altitude_mean_meters' variable
-
+## Removing the 'harvested' and 'altitude_mean_meters' variable
 ```{r}
 data2 <- data %>%
   filter(country_of_origin == 'Brazil' | country_of_origin == 'Colombia') %>%
-  dplyr::select(-c(category_two_defects, altitude_mean_meters))
+  dplyr::select(-c(altitude_mean_meters, harvested))
+
 ```
 
-Here we use subseted variables to fit a new logistic regression model:
+Here we use subsetted variables to fit a new logistic regression model:
 
 ```{r}
-model2 = glm(formula = data2$Qualityclass ~ ., family = binomial(link = 'logit'),data = data2)
+model2 = glm(formula = data1$Qualityclass ~ ., family = binomial(link = 'logit'),data = data2)
 ```
 
 ```{r}
 model2 %>%
   summary()
 ```
+AIC=157.45
+## Removing the 'harvested', 'category_two_defects' variable and the 'altitude_mean_meters' variable
 
-AIC: 205.15
+```{r}
+data3 <- data %>%
+  filter(country_of_origin == 'Brazil' | country_of_origin == 'Colombia') %>%
+  dplyr::select(-c(category_two_defects, altitude_mean_meters, harvested))
+```
 
-However, after removing the 'category_two_defects' variable, model2 has a higher AIC.
+Here we use subsetted variables to fit a new logistic regression model:
 
-Thus, we adopt the model which only remove the 'category_two_defects' variable (model1).
+```{r}
+model3 = glm(formula = data2$Qualityclass ~ ., family = binomial(link = 'logit'),data = data3)
+```
+
+```{r}
+model3 %>%
+  summary()
+```
+
+AIC=158.29
+
+## Conclusion
+full_model: AIC=164.97
+By removing 'harvested' only: AIC=159.02
+By removing 'harvested' and 'category_two_defects' variable: AIC=158.53
+By removing 'harvested' and 'altitude_mean_meters' variable: AIC=157.45
+By removing 'harvested', 'category_two_defects' variable and the 'altitude_mean_meters' variable: AIC=158.29
+
+Thus, we can remove 'harvested' and 'altitude_mean_meters'. Other combinations listed are also suitable as they have similar AICs. 
