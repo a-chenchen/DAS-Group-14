@@ -1,0 +1,118 @@
+---
+title: ""
+number-sections: true
+format: 
+  html:
+    embed-resources: true
+    code-tools: true
+  pdf: default
+editor_options: 
+  chunk_output_type: console
+execute:
+  echo: true
+  eval: true
+  warning: false
+  message: false
+---
+
+```{r}
+library(tidyverse)
+library(moderndive)
+library(gapminder)
+library(sjPlot)
+library(stats)
+library(jtools)
+library(dplyr)
+library(knitr)
+library(janitor)
+library(MASS)
+library(sjPlot)
+```
+
+# Data wrangling and subsetting
+
+```{r}
+#data wrangling and subseting
+data = read.csv('dataset14.csv')
+data <- na.omit(data)
+mapping = c('Poor' = 0, 'Good' = 1)
+data$Qualityclass = mapping[data$Qualityclass]
+data$harvested = as.factor(data$harvested)
+```
+
+```{r}
+#remove Cote d?Ivoire
+data <- data %>% 
+  filter(country_of_origin != "Cote d?Ivoire")
+```
+
+Here we map countriy_of_origin to corresponding continent
+
+```{r}
+unique(data$country_of_origin)
+```
+
+```{r}
+continent_mapping <- c("China" = "Asia", "Mexico" = "North America", "Brazil" = "South America",
+                       "Guatemala" = "North America", "Taiwan" = "Asia", "Uganda" = "Africa",
+                       "Vietnam" = "Asia", "Thailand" = "Asia", "Colombia" = "South America",
+                       "Kenya" = "Africa", "Costa Rica" = "North America", "Haiti" = "North America",
+                       "Honduras" = "North America", "Philippines" = "Asia", "El Salvador" = "North America",
+                       "Indonesia" = "Asia", "Ethiopia" = "Africa",
+                       "Tanzania, United Republic Of" = "Africa", "Nicaragua" = "North America", "Malawi" = "Africa",
+                       "United States" = "North America", "Peru" = "South America", "Rwanda" = "Africa",
+                       "India" = "Asia", "Myanmar" = "Asia", "Papua New Guinea" = "Oceania", "Laos" = "Asia",
+                       "Panama" = "North America", "Burundi" = "Africa",
+                       "United States (Puerto Rico)" = "North America", "United States (Hawaii)" = "North America",
+                       "Cote d'Ivoire" = "Africa", "Zambia" = "Africa", "Ecuador" = "South America")
+
+# map countries to its continent
+data$continent <- continent_mapping[data$country_of_origin]
+
+
+```
+
+```{r}
+unique(data$continent)
+```
+
+# fitting GLM models
+
+## Not removing variables
+
+Here we have continent as our new categorical explanatory variable to fit a full logistic regression model:
+
+```{r}
+#Here we have continent as our new categorical explanatory variable
+full_model = glm(Qualityclass ~ . - country_of_origin, family = binomial(link = 'logit'), data = data)
+```
+
+```{r}
+summary(full_model)
+```
+
+It is shown that the 'harvested' and 'altitude_mean_meters' variables are insignificant. \## Using stepAIC to measure goodness of fit
+
+```{r}
+#direction = 'backward'
+stepAIC(full_model)
+```
+
+```{r}
+#direction = 'both'
+stepAIC(full_model, direction = 'both')
+```
+
+Both indicated that to obtain a better glm model, 'harvested' and 'altitude_mean_meters' variable should be removed.\
+## Therefore we obtained a better glm model
+
+```{r}
+glm(formula = Qualityclass ~ aroma + flavor + acidity + category_two_defects + 
+      continent, family = binomial(link = "logit"), data = data)
+```
+
+# Conclusion
+
+full_model: AIC=538.89, Residual deviance=502.89\
+By removing 'harvested' and 'altitude_mean_meters' variable which were insignificant: AIC=525.9, Residual Deviance=507.9\
+Thus, we can map countries to continents and remove 'harvested' and 'altitude_mean_meters'.
