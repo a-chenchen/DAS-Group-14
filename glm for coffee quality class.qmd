@@ -133,6 +133,7 @@ ctrl <- trainControl(method = "cv",
 ```
 model including category_two_defects:
 ```{r}
+set.seed(14)
 model1.pred <- train(Qualityclass ~ aroma + flavor + 
                  acidity + category_two_defects + continent,
                data = data,
@@ -144,6 +145,7 @@ print(accuracy1)
 ```
 model dropping category_two_defects:
 ```{r}
+set.seed(14)
 model2.pred <- train(Qualityclass ~ aroma + flavor + 
                  acidity + continent,
                data = data,
@@ -154,6 +156,7 @@ accuracy2 = model2.pred$results$Accuracy
 print(accuracy2)
 ```
 Including variable category_two_defects cause a slightly higher accuracy rate.
+test
 
 # Conclusion
 
