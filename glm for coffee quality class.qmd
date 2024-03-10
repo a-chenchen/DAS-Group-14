@@ -26,7 +26,7 @@ library(dplyr)
 library(knitr)
 library(janitor)
 library(MASS)
-library(sjPlot)
+library(caret)
 ```
 
 # Data wrangling and subsetting
@@ -104,15 +104,60 @@ stepAIC(full_model, direction = 'both')
 ```
 
 Both indicated that to obtain a better glm model, 'harvested' and 'altitude_mean_meters' variable should be removed.\
-## Therefore we obtained a better glm model
+\## Therefore we obtained a better glm model
 
 ```{r}
-glm(formula = Qualityclass ~ aroma + flavor + acidity + category_two_defects + 
-      continent, family = binomial(link = "logit"), data = data)
+model1 = glm(formula = Qualityclass ~ aroma + flavor + acidity +
+               category_two_defects + continent,
+             family = binomial(link = "logit"), data = data)
+summary(model1)
 ```
+However, in the model with lowest AIC 525.88, variable category_two_defects is not so significant.
+
+```{r}
+model2 = glm(formula = Qualityclass ~ aroma + flavor + acidity +  
+      continent, family = binomial(link = "logit"), data = data)
+summary(model2)
+```
+The model dropping category_two_defects has AIC 526.97, which is slightly higher than 525.88. But all the variables is significant.
+
+So we want to compare this two models by predictive power.
+
+# predictive power
+
+To compare predictive power of these two models, mean accuracy rate of 10-fold cross validation is used there.
+
+```{r}
+ctrl <- trainControl(method = "cv",
+                     number = 10)
+```
+model including category_two_defects:
+```{r}
+model1.pred <- train(Qualityclass ~ aroma + flavor + 
+                 acidity + category_two_defects + continent,
+               data = data,
+               method = "glm",
+               family = "binomial",
+               trControl = ctrl) 
+accuracy1 = model1.pred$results$Accuracy
+print(accuracy1)
+```
+model dropping category_two_defects:
+```{r}
+model2.pred <- train(Qualityclass ~ aroma + flavor + 
+                 acidity + continent,
+               data = data,
+               method = "glm",
+               family = "binomial",
+               trControl = ctrl) 
+accuracy2 = model2.pred$results$Accuracy
+print(accuracy2)
+```
+Including variable category_two_defects cause a slightly higher accuracy rate.
 
 # Conclusion
 
 full_model: AIC=538.89, Residual deviance=502.89\
 By removing 'harvested' and 'altitude_mean_meters' variable which were insignificant: AIC=525.9, Residual Deviance=507.9\
-Thus, we can map countries to continents and remove 'harvested' and 'altitude_mean_meters'.
+
+Finally, we choose the binomial generalized linear model with aroma, flavor, acidity, category_two_defects and continent to fit and predict quality class of coffee.
