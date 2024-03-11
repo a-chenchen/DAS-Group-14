@@ -68,12 +68,13 @@ continent_mapping <- c("China" = "Asia", "Mexico" = "North America", "Brazil" = 
 
 # map countries to its continent
 data$continent <- continent_mapping[data$country_of_origin]
-
+table(data$continent)
 
 ```
+delete sole observation in Oceania.
 
 ```{r}
-unique(data$continent)
+data = data %>% filter(continent != 'Oceania')
 ```
 
 # fitting GLM models
@@ -112,14 +113,14 @@ model1 = glm(formula = Qualityclass ~ aroma + flavor + acidity +
              family = binomial(link = "logit"), data = data)
 summary(model1)
 ```
-However, in the model with lowest AIC 525.88, variable category_two_defects is not so significant.
+However, in the model with lowest AIC 523.88, variable category_two_defects is not so significant.
 
 ```{r}
 model2 = glm(formula = Qualityclass ~ aroma + flavor + acidity +  
       continent, family = binomial(link = "logit"), data = data)
 summary(model2)
 ```
-The model dropping category_two_defects has AIC 526.97, which is slightly higher than 525.88. But all the variables is significant.
+The model dropping category_two_defects has AIC 524.97, which is slightly higher than 523.88. But all the variables are significant.
 
 So we want to compare this two models by predictive power.
 
@@ -128,31 +129,33 @@ So we want to compare this two models by predictive power.
 To compare predictive power of these two models, mean accuracy rate of 10-fold cross validation is used there.
 
 ```{r}
-ctrl <- trainControl(method = "cv",
-                     number = 10)
+set.seed(14)
+folds <- createFolds(y=data$Qualityclass,k=10)
 ```
-model including category_two_defects:
+
 ```{r}
-model1.pred <- train(Qualityclass ~ aroma + flavor + 
-                 acidity + category_two_defects + continent,
-               data = data,
-               method = "glm",
-               family = "binomial",
-               trControl = ctrl) 
-accuracy1 = model1.pred$results$Accuracy
-print(accuracy1)
-```
-model dropping category_two_defects:
-```{r}
-model2.pred <- train(Qualityclass ~ aroma + flavor + 
-                 acidity + continent,
-               data = data,
-               method = "glm",
-               family = "binomial",
-               trControl = ctrl) 
-accuracy2 = model2.pred$results$Accuracy
-print(accuracy2)
-```
+total.n = 0
+right1.n = 0
+right2.n = 0
+for(i in 1:10){
+  fold.val = data[folds[[i]],]
+  fold.train = data[-folds[[i]],]
+  model1.val = glm(Qualityclass ~ aroma + flavor + acidity +
+               category_two_defects + continent,
+             family = binomial(link = "logit"), data = fold.train)
+  predict1.val = ifelse(predict(model1.val, type='response',newdata=fold.val)>0.5, 1, 0)
+  model2.val = glm(Qualityclass ~ aroma + flavor + acidity + continent,
+             family = binomial(link = "logit"), data = fold.train)
+  predict2.val = ifelse(predict(model2.val, type='response',newdata=fold.val)>0.5, 1, 0)
+  total.n = total.n + nrow(fold.val)
+  right1.n = right1.n + sum(predict1.val == fold.val$Qualityclass)
+  right2.n = right2.n + sum(predict2.val == fold.val$Qualityclass)
+}
+print('mean accuracy rate foe model including category_two_defects: ')
+print(right1.n/total.n)
+print('mean accuracy rate foe model dropping category_two_defects: ')
+print(right2.n/total.n)
+``
 Including variable category_two_defects cause a slightly higher accuracy rate.
 
 # Conclusion
