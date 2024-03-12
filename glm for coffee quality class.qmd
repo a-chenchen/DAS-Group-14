@@ -155,7 +155,7 @@ print('mean accuracy rate foe model including category_two_defects: ')
 print(right1.n/total.n)
 print('mean accuracy rate foe model dropping category_two_defects: ')
 print(right2.n/total.n)
-``
+```
 Including variable category_two_defects cause a slightly higher accuracy rate.
 
 # Conclusion
@@ -164,3 +164,48 @@ full_model: AIC=538.89, Residual deviance=502.89\
 By removing 'harvested' and 'altitude_mean_meters' variable which were insignificant: AIC=525.9, Residual Deviance=507.9\
 
 Finally, we choose the binomial generalized linear model with aroma, flavor, acidity, category_two_defects and continent to fit and predict quality class of coffee.
+
+
+# visualize
+
+obtain estimated probabilities for each variable:
+
+1、aroma
+
+```{r}
+plot_model(model1, type = "pred", terms = "aroma[all]")
+```
+
+The predicted probability of Qualityclass increases sharply as the aroma score increases. This suggests a strong positive association between the quality of coffee and its aroma.
+
+
+2、flavor
+
+```{r}
+plot_model(model1, type = "pred", terms = "flavor[all]")
+```
+
+Similar to aroma, the probability of a higher Qualityclass increases sharply with the flavor score. Flavor appears to be a significant predictor of coffee quality.
+
+3、acidity
+
+```{r}
+plot_model(model1, type = "pred", terms = "acidity[all]")
+```
+
+The plot shows that higher acidity scores are associated with a higher probability of Qualityclass. There is a positive relationship between acidity and coffee quality, though it seems to have a threshold effect, with probability rising more sharply after a certain point.
+
+4、category_two_defects
+
+```{r}
+plot_model(model1, type = "pred", terms = "category_two_defects[all]")
+```
+
+As the number of defects increases, the probability of a higher Qualityclass increases. This is somewhat counterintuitive, as one might expect more defects to decrease quality. However, the confidence band is wide, suggesting there may be high variability or that this variable interacts with others in complex ways.
+
+5、continent
+```{r}
+plot_model(model1, type = "pred", terms = "continent")
+```
+
+ There appears to be variation among continents, with some showing higher probabilities than others, suggesting geographical variation in coffee quality.
