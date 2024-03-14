@@ -1,11 +1,7 @@
 ---
 title: ""
 number-sections: true
-format: 
-  html:
-    embed-resources: true
-    code-tools: true
-  pdf: default
+format: pdf
 editor_options: 
   chunk_output_type: console
 execute:
@@ -27,6 +23,9 @@ library(knitr)
 library(janitor)
 library(MASS)
 library(caret)
+library(GGally)
+library(tables)
+library(gt)
 ```
 
 # Data wrangling and subsetting
@@ -35,8 +34,7 @@ library(caret)
 #data wrangling and subseting
 data = read.csv('dataset14.csv')
 data <- na.omit(data)
-mapping = c('Poor' = 0, 'Good' = 1)
-data$Qualityclass = mapping[data$Qualityclass]
+data$Qualityclass = as.factor(data$Qualityclass)
 data$harvested = as.factor(data$harvested)
 ```
 
@@ -71,13 +69,25 @@ data$continent <- continent_mapping[data$country_of_origin]
 table(data$continent)
 
 ```
-delete sole observation in Oceania.
+
+Delete sole observation in Oceania.
 
 ```{r}
 data = data %>% filter(continent != 'Oceania')
 ```
 
-# fitting GLM models
+Pairwise plot for variables:
+```{r}
+ggpairs(data[,-1],mapping = aes(color = Qualityclass))
+```
+
+Summary statistics for numerical variables with respect to different quality classes:
+```{r}
+tabular(aroma + flavor + acidity + category_two_defects + altitude_mean_meters ~ Qualityclass * (mean+sd+min+max+IQR), data=data)
+```
+
+
+# Fitting GLM models
 
 ## Not removing variables
 
@@ -113,6 +123,7 @@ model1 = glm(formula = Qualityclass ~ aroma + flavor + acidity +
              family = binomial(link = "logit"), data = data)
 summary(model1)
 ```
+
 However, in the model with lowest AIC 523.88, variable category_two_defects is not so significant.
 
 ```{r}
@@ -120,11 +131,12 @@ model2 = glm(formula = Qualityclass ~ aroma + flavor + acidity +
       continent, family = binomial(link = "logit"), data = data)
 summary(model2)
 ```
+
 The model dropping category_two_defects has AIC 524.97, which is slightly higher than 523.88. But all the variables are significant.
 
 So we want to compare this two models by predictive power.
 
-# predictive power
+# Predictive power
 
 To compare predictive power of these two models, mean accuracy rate of 10-fold cross validation is used there.
 
@@ -156,19 +168,19 @@ print(right1.n/total.n)
 print('mean accuracy rate foe model dropping category_two_defects: ')
 print(right2.n/total.n)
 ```
+
 Including variable category_two_defects cause a slightly higher accuracy rate.
 
 # Conclusion
 
-full_model: AIC=538.89, Residual deviance=502.89\
-By removing 'harvested' and 'altitude_mean_meters' variable which were insignificant: AIC=525.9, Residual Deviance=507.9\
+We start with full_model whose AIC=536.89, Residual deviance=502.89.\
+By removing 'harvested' and 'altitude_mean_meters' variable which were insignificant: AIC=523.88, Residual Deviance=507.88.
 
 Finally, we choose the binomial generalized linear model with aroma, flavor, acidity, category_two_defects and continent to fit and predict quality class of coffee.
 
+# Visualization for model
 
-# visualize
-
-obtain estimated probabilities for each variable:
+Based on the model we choose, estimated probabilities for a good quality class with respect to each variable:
 
 1、aroma
 
@@ -177,7 +189,6 @@ plot_model(model1, type = "pred", terms = "aroma[all]")
 ```
 
 The predicted probability of Qualityclass increases sharply as the aroma score increases. This suggests a strong positive association between the quality of coffee and its aroma.
-
 
 2、flavor
 
@@ -204,8 +215,8 @@ plot_model(model1, type = "pred", terms = "category_two_defects[all]")
 As the number of defects increases, the probability of a higher Qualityclass increases. This is somewhat counterintuitive, as one might expect more defects to decrease quality. However, the confidence band is wide, suggesting there may be high variability or that this variable interacts with others in complex ways.
 
 5、continent
+
 ```{r}
 plot_model(model1, type = "pred", terms = "continent")
 ```
-
- There appears to be variation among continents, with some showing higher probabilities than others, suggesting geographical variation in coffee quality.
+There appears to be variation among continents, with some showing higher probabilities than others, suggesting geographical variation in coffee quality.
