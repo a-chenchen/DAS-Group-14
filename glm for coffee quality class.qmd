@@ -25,7 +25,6 @@ library(MASS)
 library(caret)
 library(GGally)
 library(tables)
-library(gt)
 ```
 
 # Data wrangling and subsetting
@@ -86,6 +85,11 @@ Summary statistics for numerical variables with respect to different quality cla
 tabular(aroma + flavor + acidity + category_two_defects + altitude_mean_meters ~ Qualityclass * (mean+sd+min+max+IQR), data=data)
 ```
 
+```{r}
+data$Qualityclass = as.numeric(data$Qualityclass)
+data$Qualityclass[data$Qualityclass == 2] = 0
+```
+
 
 # Fitting GLM models
 
@@ -102,7 +106,7 @@ full_model = glm(Qualityclass ~ . - country_of_origin, family = binomial(link = 
 summary(full_model)
 ```
 
-It is shown that the 'harvested' and 'altitude_mean_meters' variables are insignificant. \## Using stepAIC to measure goodness of fit
+It is shown that the 'harvested' and 'altitude_mean_meters' variables are insignificant. Then we use stepAIC to measure goodness of fit.
 
 ```{r}
 #direction = 'backward'
@@ -114,8 +118,9 @@ stepAIC(full_model)
 stepAIC(full_model, direction = 'both')
 ```
 
-Both indicated that to obtain a better glm model, 'harvested' and 'altitude_mean_meters' variable should be removed.\
-\## Therefore we obtained a better glm model
+Both indicated that to obtain a better glm model, 'harvested' and 'altitude_mean_meters' variable should be removed.
+
+Therefore we obtained a better glm model
 
 ```{r}
 model1 = glm(formula = Qualityclass ~ aroma + flavor + acidity +
