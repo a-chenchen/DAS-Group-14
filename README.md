@@ -19,17 +19,3 @@ To replicate the analysis or to conduct further research:
 2. Ensure you have R and the required packages installed.
 3. Run the `.qmd` file in an R environment to view the analysis.
 
-## Contributions
-Contributions to this project are welcome. You can contribute by:
-- Extending the dataset with more attributes or records.
-- Improving the existing GLM analysis or suggesting new modeling techniques.
-- Reviewing the methodology and providing feedback.
-
-## License
-This project is open-sourced under the MIT License. See the `LICENSE` file for more details.
-
-## Contact
-For any queries regarding the analysis, please raise an issue in this repository or contact the repository maintainers directly.
-
-## Acknowledgements
-We would like to thank all the contributors to the project and the coffee producers for providing the data.
