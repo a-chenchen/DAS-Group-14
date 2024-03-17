@@ -1,7 +1,11 @@
 ---
-title: ""
+title: "Factor affecting the quality of coffee beans"
 number-sections: true
 format: pdf
+include-in-header: 
+  text: |
+    \usepackage{fvextra}
+    \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
 editor_options: 
   chunk_output_type: console
 execute:
@@ -10,6 +14,7 @@ execute:
   warning: false
   message: false
 ---
+Library packages. 
 
 ```{r}
 library(tidyverse)
@@ -27,23 +32,24 @@ library(GGally)
 library(tables)
 ```
 
-# Data wrangling and subsetting
+# Exploratory data analysis
 
+Read data and convert Qualityclass and harvested year into categorical variables.
 ```{r}
-#data wrangling and subseting
 data = read.csv('dataset14.csv')
 data <- na.omit(data)
 data$Qualityclass = as.factor(data$Qualityclass)
 data$harvested = as.factor(data$harvested)
 ```
 
+Deleting invalid observations there.
 ```{r}
 #remove Cote d?Ivoire
 data <- data %>% 
   filter(country_of_origin != "Cote d?Ivoire")
 ```
 
-Here we map countriy_of_origin to corresponding continent
+Here we map countriy_of_origin to corresponding continent.
 
 ```{r}
 unique(data$country_of_origin)
@@ -82,19 +88,18 @@ ggpairs(data[,-1],mapping = aes(color = Qualityclass))
 
 Summary statistics for numerical variables with respect to different quality classes:
 ```{r}
-tabular(aroma + flavor + acidity + category_two_defects + altitude_mean_meters ~ Qualityclass * (mean+sd+min+max+IQR), data=data)
+table = tabular(aroma + flavor + acidity + category_two_defects + altitude_mean_meters ~ Qualityclass * (mean+sd+min+max+IQR), data=data)
+print(table, type = 'latex')
 ```
 
+Mapping good quality and poor quality into 1 and 0 respectively.
 ```{r}
 data$Qualityclass = as.numeric(data$Qualityclass)
 data$Qualityclass[data$Qualityclass == 2] = 0
 ```
 
 
-# Fitting GLM models
-
-## Not removing variables
-
+# Model selection
 Here we have continent as our new categorical explanatory variable to fit a full logistic regression model:
 
 ```{r}
@@ -106,21 +111,18 @@ full_model = glm(Qualityclass ~ . - country_of_origin, family = binomial(link = 
 summary(full_model)
 ```
 
-It is shown that the 'harvested' and 'altitude_mean_meters' variables are insignificant. Then we use stepAIC to measure goodness of fit.
+It is shown that the 'harvested' and 'altitude_mean_meters' variables are insignificant. 
+
+Then we use stepAIC to measure goodness of fit.
 
 ```{r}
 #direction = 'backward'
 stepAIC(full_model)
 ```
 
-```{r}
-#direction = 'both'
-stepAIC(full_model, direction = 'both')
-```
-
 Both indicated that to obtain a better glm model, 'harvested' and 'altitude_mean_meters' variable should be removed.
 
-Therefore we obtained a better glm model
+Therefore we obtained a better glm model.
 
 ```{r}
 model1 = glm(formula = Qualityclass ~ aroma + flavor + acidity +
@@ -168,15 +170,13 @@ for(i in 1:10){
   right1.n = right1.n + sum(predict1.val == fold.val$Qualityclass)
   right2.n = right2.n + sum(predict2.val == fold.val$Qualityclass)
 }
-print('mean accuracy rate foe model including category_two_defects: ')
-print(right1.n/total.n)
-print('mean accuracy rate foe model dropping category_two_defects: ')
-print(right2.n/total.n)
+cat('Mean accuracy rate for model including category_two_defects: ', right1.n/total.n, "\n",'Mean accuracy rate for model dropping category_two_defects: ', right2.n/total.n,"\n")
+
 ```
 
 Including variable category_two_defects cause a slightly higher accuracy rate.
 
-# Conclusion
+# Result and Conclusion
 
 We start with full_model whose AIC=536.89, Residual deviance=502.89.\
 By removing 'harvested' and 'altitude_mean_meters' variable which were insignificant: AIC=523.88, Residual Deviance=507.88.
@@ -187,7 +187,7 @@ Finally, we choose the binomial generalized linear model with aroma, flavor, aci
 
 Based on the model we choose, estimated probabilities for a good quality class with respect to each variable:
 
-1、aroma
+1. aroma
 
 ```{r}
 plot_model(model1, type = "pred", terms = "aroma[all]")
@@ -195,7 +195,7 @@ plot_model(model1, type = "pred", terms = "aroma[all]")
 
 The predicted probability of Qualityclass increases sharply as the aroma score increases. This suggests a strong positive association between the quality of coffee and its aroma.
 
-2、flavor
+2. flavor
 
 ```{r}
 plot_model(model1, type = "pred", terms = "flavor[all]")
@@ -203,7 +203,7 @@ plot_model(model1, type = "pred", terms = "flavor[all]")
 
 Similar to aroma, the probability of a higher Qualityclass increases sharply with the flavor score. Flavor appears to be a significant predictor of coffee quality.
 
-3、acidity
+3. acidity
 
 ```{r}
 plot_model(model1, type = "pred", terms = "acidity[all]")
@@ -211,7 +211,7 @@ plot_model(model1, type = "pred", terms = "acidity[all]")
 
 The plot shows that higher acidity scores are associated with a higher probability of Qualityclass. There is a positive relationship between acidity and coffee quality, though it seems to have a threshold effect, with probability rising more sharply after a certain point.
 
-4、category_two_defects
+4. category_two_defects
 
 ```{r}
 plot_model(model1, type = "pred", terms = "category_two_defects[all]")
@@ -219,7 +219,7 @@ plot_model(model1, type = "pred", terms = "category_two_defects[all]")
 
 As the number of defects increases, the probability of a higher Qualityclass increases. This is somewhat counterintuitive, as one might expect more defects to decrease quality. However, the confidence band is wide, suggesting there may be high variability or that this variable interacts with others in complex ways.
 
-5、continent
+5. continent
 
 ```{r}
 plot_model(model1, type = "pred", terms = "continent")
